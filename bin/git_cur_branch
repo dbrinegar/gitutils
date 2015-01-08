@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# establish that we are in a git repo first so can detect detached head later
+g=$( git rev-parse --git-dir 2>/dev/null )
+[ 0 -eq $? ] || exit 1
+
+# this should do it normally:
+git symbolic-ref --short HEAD 2>/dev/null
+[ 0 -eq $? ] && exit 0
+
+# detached head: we have a git repo, but no working branch
+# eg: git checkout {sha-of-some-commit}
+echo "$( head -c 8 $g/HEAD )..."
+exit 1

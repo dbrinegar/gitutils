@@ -30,7 +30,7 @@ then
     # pwd is the git-dir, nothing to add
     gitDir=
   else
-    gitDir="/$gitdir"
+    gitDir="/$gitDir"
   fi
   gitDir=$( pwd )$gitDir
 fi

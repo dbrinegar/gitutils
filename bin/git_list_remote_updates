@@ -8,6 +8,12 @@ then
   exit 1
 fi
 
+if ! git config --get remote.origin.url >/dev/null 2>/dev/null
+then
+  test -n "${verbose}" && echo "no upstream for this repo"
+  exit 1
+fi
+
 # sync references without merging locally
 git fetch origin
 

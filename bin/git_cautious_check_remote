@@ -11,7 +11,13 @@ me=$( basename ${0} )
 gitDir=$( git rev-parse --git-dir 2>/dev/null )
 if [ $? != 0 -o -z "$gitDir" ]
 then
-  # not in a git directory
+  [ $DEBUG ] && echo not in a git directory
+  exit 1
+fi
+
+if ! git config --get remote.origin.url >/dev/null 2>/dev/null
+then
+  [ $DEBUG ] && echo no upstream in this git repo
   exit 1
 fi
 

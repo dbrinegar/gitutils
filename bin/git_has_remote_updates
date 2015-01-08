@@ -31,6 +31,11 @@ then
   exit 1
 fi
 
+if ! git config --get remote.origin.url >/dev/null 2>/dev/null
+then
+  test -n "${verbose}" && echo "no upstream for this repo"
+  exit 1
+fi
 
 remote_sha=`git ls-remote origin -h refs/heads/${branch} |
   awk '{print $1;exit}'`

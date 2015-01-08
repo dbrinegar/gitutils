@@ -1,0 +1,15 @@
+#!/bin/sh
+
+branch=`git_cur_branch`
+
+if test -z "${branch}"
+then
+  echo "not in a git repo"
+  exit 1
+fi
+
+# sync references without merging locally
+git fetch origin
+
+# show changes.  passes along log options like --oneline
+git log HEAD..origin/${branch} "${@}"

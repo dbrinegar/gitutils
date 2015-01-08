@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Intended to guard against this machine auto-bombing a remote repo.
+# Will meter out remote checks to one per hour while no remote updates.
+
+# to show debug output, invoke like so:
+# DEBUG=1 git_cautious_check_remote
+
+me=$( basename ${0} )
+
+gitDir=$( git rev-parse --git-dir 2>/dev/null )
+if [ $? != 0 -o -z "$gitDir" ]
+then
+  # not in a git directory
+  exit 1
+fi
+
+if [ "/" != ${gitDir:0:1} ]
+then
+  gitDir=$( pwd )/${gitDir}
+fi
+
+repoName=$( printf "%s" "$gitDir" | sed -e 's,/.git$,,' -e 's,.*/,,g' )
+
+[ $DEBUG ] && echo gitDir: $gitDir
+[ $DEBUG ] && echo repoName: $repoName
+
+
+flagFile="${repoName}-$( printf %s $gitDir | shasum | head -c 8 )"
+flagFile="/tmp/${me}/${flagFile%% *}"
+
+[ $DEBUG ] && echo flagfile: $flagFile
+
+# if FETCH_HEAD is newer than the flagFile, then we fetched since last check
+# and in that case we want to update the flagFile
+#
+# if flagFile is empty and older than an hour, then get an update
+#
+# if flagFile is non-empty (and older than FETCH_HEAD) we already know the
+# remote has some update we could get and we don't need to keep asking
+
+check_git_updated() {
+  # returns true if git repo is newer than the flagFile
+  # "newer than" is also true if the flagFile doesn't exist
+  test ${gitDir}/FETCH_HEAD -nt $flagFile
+}
+
+check_period() {
+  # assumes flagFile exists, returns true if it is empty and old
+  local f=$( find $flagFile -size 0 -mtime +1h 2>/dev/null )
+  test -n "$f"
+}
+
+flag_no_updates() {
+  # empty file -> keep checking
+  [ $DEBUG ] && echo flagging no remote updates available
+  rm -f $flagFile
+  mkdir -p /tmp/$me
+  touch $flagFile
+}
+
+flag_has_updates() {
+  # non-empty file -> stop checking until git updates
+  [ $DEBUG ] && echo flagging that updates were found
+  rm -f $flagFile
+  mkdir -p /tmp/$me
+  echo "has updates" > $flagFile
+}
+
+# TODO: clean up from time to time
+cleanup_cache() {
+  # remove all the empty flag files older than 1 hour
+  [ $DEBUG ] && echo cleaning up cache in /tmp/$me
+  find /tmp/$me -size 0 -mtime +1h | xargs rm
+}
+
+[ $DEBUG ] && echo check_git_updated: $( check_git_updated && echo true || echo false )
+[ $DEBUG ] && echo check_period: $( check_period && echo true || echo false )
+
+if check_git_updated || check_period
+then
+  [ $DEBUG ] && echo checking remote...
+  if git_has_remote_updates
+  then
+    flag_has_updates
+  else
+    flag_no_updates
+  fi
+fi
+
+# return true if remote has updates we could fetch
+[ $DEBUG ] && ( test -s $flagFile && echo remote has updates || echo no updates on remote )
+test -s $flagFile

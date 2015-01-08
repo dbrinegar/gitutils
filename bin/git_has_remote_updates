@@ -1,0 +1,45 @@
+#!/bin/sh
+verbose=
+
+while getopts "hv" opt
+do
+  case $opt in
+    h)
+      cat <<EOF
+usage: $0 [-h] [-v]
+ -h shows help
+ -v verbose output, default is silent
+
+Fetches remote hash for head of current branch then searches for that hash in
+our local repo. Exit status indicates true if remote has changes we could
+fetch.  Note this does a remote operation over the network so could be slow.
+EOF
+      exit
+      ;;
+    v)
+      verbose=1
+      ;;
+  esac
+done
+
+
+branch=`git_cur_branch`
+
+if [ -z "${branch}" ]
+then
+  test -n "${verbose}" && echo "not in a git repo"
+  exit 1
+fi
+
+
+remote_sha=`git ls-remote origin -h refs/heads/${branch} |
+  awk '{print $1;exit}'`
+
+if git rev-list origin/${branch} | grep -q "${remote_sha}"
+then
+  test -n "${verbose}" && echo "local is up to date with remote"
+  exit 1
+else
+  test -n "${verbose}" && echo "remote has changes we could fetch"
+  exit 0
+fi

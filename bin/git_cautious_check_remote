@@ -55,9 +55,14 @@ flagFile="/tmp/${me}/${flagFile%% *}"
 # if flagFile is non-empty (and older than FETCH_HEAD) we already know the
 # remote has some update we could get and we don't need to keep asking
 
+check_no_flag() {
+  test ! -f $flagFile
+}
+
 check_git_updated() {
   # returns true if git repo is newer than the flagFile
   # "newer than" is also true if the flagFile doesn't exist
+  # but FETCH_HEAD doesn't exist until a pull is done
   test ${gitDir}/FETCH_HEAD -nt $flagFile
 }
 
@@ -93,7 +98,7 @@ cleanup_cache() {
 [ $DEBUG ] && echo check_git_updated: $( check_git_updated && echo true || echo false )
 [ $DEBUG ] && echo check_period: $( check_period && echo true || echo false )
 
-if check_git_updated || check_period
+if check_no_flag || check_git_updated || check_period
 then
   [ $DEBUG ] && echo checking remote...
   if git_has_remote_updates

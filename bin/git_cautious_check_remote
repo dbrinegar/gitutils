@@ -15,12 +15,22 @@ then
   exit 1
 fi
 
+# handle partial paths
 if [ "/" != ${gitDir:0:1} ]
 then
-  gitDir=$( pwd )/${gitDir}
+  # deal with dot as special case, we want a fully qualified directory
+  if [ "." = "$gitDir" ]
+  then
+    # pwd is the git-dir, nothing to add
+    gitDir=
+  else
+    gitDir="/$gitdir"
+  fi
+  gitDir=$( pwd )$gitDir
 fi
 
-repoName=$( printf "%s" "$gitDir" | sed -e 's,/.git$,,' -e 's,.*/,,g' )
+# repoName is the next to last folder in the gitDir
+repoName=$( printf "%s" "$gitDir" | sed -e 's,/[^/]*$,,' -e 's,.*/,,g' )
 
 [ $DEBUG ] && echo gitDir: $gitDir
 [ $DEBUG ] && echo repoName: $repoName

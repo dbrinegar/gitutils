@@ -3,6 +3,10 @@
 # Intended to guard against this machine auto-bombing a remote repo.
 # Will meter out remote checks to one per hour while no remote updates.
 
+# cache file is part human reable, pulled from the gitDir path, and part a low
+# collision hash made from the origin.url.  This means cache will refresh
+# whenever the repo base folder is renamed or origin is changed.
+
 # to show debug output, invoke like so:
 # DEBUG=1 git_cautious_check_remote
 
@@ -15,7 +19,8 @@ then
   exit 1
 fi
 
-if ! git config --get remote.origin.url >/dev/null 2>/dev/null
+remote=$( git config --get remote.origin.url 2>/dev/null)
+if [ $? != 0 -o -z "$remote" ]
 then
   [ $DEBUG ] && echo no upstream in this git repo
   exit 1
@@ -42,7 +47,7 @@ repoName=$( printf "%s" "$gitDir" | sed -e 's,/[^/]*$,,' -e 's,.*/,,g' )
 [ $DEBUG ] && echo repoName: $repoName
 
 
-flagFile="${repoName}-$( printf %s $gitDir | shasum | head -c 8 )"
+flagFile="${repoName}-$( printf %s $remote | shasum | head -c 8 )"
 flagFile="/tmp/${me}/${flagFile%% *}"
 
 [ $DEBUG ] && echo flagfile: $flagFile

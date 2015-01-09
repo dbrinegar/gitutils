@@ -99,7 +99,7 @@ broken_upstream() {
   rm /tmp/git_cautious_check_remote/gitutils-testrun-*
   git init
   # this tricks my code into thinking upstream is there, but it isn't
-  git remote add origin git@github.com:dbrinegar/ohai.git
+  git remote add origin /dev/null
 }
 
 _create_conflict() {

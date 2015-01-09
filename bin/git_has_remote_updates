@@ -46,7 +46,7 @@ then
   exit 1
 fi
 
-if git rev-list origin/${branch} | grep -q "${remote_sha}"
+if git rev-list origin/${branch} 2>/dev/null| grep -q "${remote_sha}"
 then
   test -n "${verbose}" && echo "local is up to date with remote"
   exit 1

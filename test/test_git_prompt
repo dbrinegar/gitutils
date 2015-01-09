@@ -180,6 +180,23 @@ remote_update() {
   cd ${local}/$repo
 }
 
+local_update() {
+  remote=${d}/$repo
+  local=${d}/local
+  mkdir -p $remote
+  mkdir -p $local
+  cd $remote
+  git init
+  _commit a
+  # clone
+  cd $local
+  git clone $remote
+  # go ahead of origin
+  cd $repo
+  _commit b
+  # here prompt should say push
+}
+
 # test the test, these should all be caught failures
 run "intentional fail" init >/dev/null
 run "mixmasterblast" init >/dev/null
@@ -195,19 +212,24 @@ pass=0
 tests=0
 
 # run tests here, expecting these to all pass
-SHA="[a-h0-9]{8}[.]{3}"
+
+# simple poking around pre and post first commit because things like git
+# rev-list that depend on commits will fail until there is a commit
 run "master"        init
 run "add master"    pre_first_add
 run "add master"    pre_second_add
 run "commit master" pre_first_commit
 run "commit master" pre_second_commit
 
+# same but with a branch
 run "zippy"         init              branch
 run "add zippy"     pre_first_add     branch
 run "add zippy"     pre_second_add    branch
 run "commit zippy"  pre_first_commit  branch
 run "commit zippy"  pre_second_commit branch
 
+# get into conflict or multi-step phases
+SHA="[a-h0-9]{8}[.]{3}"
 run "merge master"       merge_conflict
 run "detached head $SHA" detached
 run "rebase apply $SHA"  rebase_conflict
@@ -216,8 +238,10 @@ run "cherry pick zippy"  cherry_pick
 run "revert master"      revert
 run "bisect master"      bisect
 
+# test remote prompts
 run "master"        broken_upstream
 run "pull master"   remote_update
+run "push master"   local_update
 
 cleanup
 summary

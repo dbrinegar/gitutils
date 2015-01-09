@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# print "verb branch", exit code: normal, highlight, or other
+
+# exit code:
+# normal means: caught up, or push, pull are available
+# hightlight means: add or commit are available
+# other means anything else
+NORMAL=0 HIGHLIGHT=1 OTHER=2
+
+exit_code=$NORMAL branch= g= v= no_head=
+
+branch="$( git_cur_branch 2>/dev/null )"
+no_head=$?
+if [ -n "$branch" ]
+then
+  g="$( git rev-parse --git-dir )"
+
+  # show multi-step or headless state, precendence to bottom of list
+  [ 0 -ne $no_head ]           && v="detached head"
+  [ -d "$g/rebase-merge" ]     && v="rebase merge"
+  [ -d "$g/rebase-apply" ]     && v="rebase apply"
+  [ -f "$g/MERGE_HEAD" ]       && v="merge"
+  [ -f "$g/CHERRY_PICK_HEAD" ] && v="cherry pick"
+  [ -f "$g/REVERT_HEAD" ]      && v="revert"
+  [ -f "$g/BISECT_LOG" ]       && v="bisect"
+
+  if [ -n "$v" ]
+  then
+    exit_code=$OTHER
+  # otherwise show normal commit workflow verb: add,commit,push,pull
+  else
+    # if git status shows anything with ?? then suggest "add"
+    # otherwise suggest "commit" if it prints anything at all
+    v=$( git status --porc |
+         awk -v FS= '
+          $1 == "?" {v="add"}
+          {if (!v) v="commit"}
+          END {if (v) print v}
+         ' )
+    if [ -n "$v" ]
+    then
+      exit_code=$HIGHLIGHT
+    # to here local is unchanged, now look at upstream if any
+    # do we have an @{upstream}?
+    elif git config --get remote.origin.url >/dev/null 2>/dev/null
+    then
+      # do we have revisions that we know are not upstream yet?
+      if [ 0 -ne "$( git rev-list --right-only --count @{upstream}...HEAD )" ]
+      then
+        v="push"
+      # do we have already fetched revisions that can be pulled, or failing
+      # that we ask the remote if it has anything we could pull
+      # git_cautious_check_remote caches the answer locally
+      elif [ 0 -ne "$( git rev-list --left-only --count @{upstream}...HEAD )" ] ||
+           git_cautious_check_remote
+      then
+        v="pull"
+      fi
+    fi
+  fi
+fi
+
+echo $v $branch
+exit $exit_code
+

@@ -101,7 +101,7 @@ broken_upstream() {
   git remote add origin git@github.com:dbrinegar/ohai.git
 }
 
-merge_conflict() {
+_create_conflict() {
   # point "zippy" and "master" to initial rev
   git init
   touch a
@@ -116,12 +116,42 @@ merge_conflict() {
   git checkout zippy
   echo zippy > a
   git commit -a -m zippy
+}
 
-  # should leave things in merge conflict
+merge_conflict() {
+  _create_conflict
   git checkout master
   git merge zippy
 }
 
+rebase_conflict() {
+  _create_conflict
+  git rebase master
+}
+
+rebase_merge() {
+  _create_conflict
+  git rebase -p master
+}
+
+cherry_pick() {
+  _create_conflict
+  git cherry-pick master
+}
+
+revert() {
+  git init
+  touch a
+  git add a
+  git commit -m a
+  sha=$( git log --oneline | awk '{print $1}' )
+  git revert -n $sha
+}
+
+bisect() {
+  git init
+  git bisect start
+}
 
 # test the test, these should all be caught failures
 run "intentional fail" init >/dev/null
@@ -137,7 +167,8 @@ fail=0
 pass=0
 tests=0
 
-# simple minded states that foiled code seen in the wild
+# run tests here, expecting these to all pass
+SHA="[a-h0-9]{8}[.]{3}"
 run "master"        init
 run "add master"    pre_first_add
 run "add master"    pre_second_add
@@ -150,11 +181,15 @@ run "add zippy"     pre_second_add    branch
 run "commit zippy"  pre_first_commit  branch
 run "commit zippy"  pre_second_commit branch
 
-run "detached head [a-h0-9]{8}[.]{3}" detached
+run "merge master"       merge_conflict
+run "detached head $SHA" detached
+run "rebase apply $SHA"  rebase_conflict
+run "rebase merge $SHA"  rebase_merge
+run "cherry pick zippy"  cherry_pick
+run "revert master"      revert
+run "bisect master"      bisect
 
 run "master"        broken_upstream
-
-run "merge master"  merge_conflict
 
 cleanup
 summary

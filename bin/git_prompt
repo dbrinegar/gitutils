@@ -46,7 +46,6 @@ then
     elif git config --get remote.origin.url >/dev/null 2>/dev/null
     then
       # do we have revisions that we know are not upstream yet?
-      local right= left=
       right=$( git rev-list --right-only --count @{upstream}...HEAD 2>/dev/null )
       left=$( git rev-list --left-only --count @{upstream}...HEAD 2>/dev/null )
       if [ 0 -ne ${right:-0} ]

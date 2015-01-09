@@ -46,13 +46,16 @@ then
     elif git config --get remote.origin.url >/dev/null 2>/dev/null
     then
       # do we have revisions that we know are not upstream yet?
-      if [ 0 -ne "$( git rev-list --right-only --count @{upstream}...HEAD )" ]
+      local right= left=
+      right=$( git rev-list --right-only --count @{upstream}...HEAD 2>/dev/null )
+      left=$( git rev-list --left-only --count @{upstream}...HEAD 2>/dev/null )
+      if [ 0 -ne ${right:-0} ]
       then
         v="push"
       # do we have already fetched revisions that can be pulled, or failing
       # that we ask the remote if it has anything we could pull
       # git_cautious_check_remote caches the answer locally
-      elif [ 0 -ne "$( git rev-list --left-only --count @{upstream}...HEAD )" ] ||
+      elif [ 0 -ne ${left:-0} ] ||
            git_cautious_check_remote
       then
         v="pull"

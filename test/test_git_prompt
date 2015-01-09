@@ -1,6 +1,7 @@
 #!/bin/sh
 
-d="/tmp/gitutils-testrun"
+repo="gitutils-testrun"
+d="/tmp/$repo"
 
 pass=0
 fail=0
@@ -8,6 +9,8 @@ tests=0
 
 cleanup() {
   rm -rf $d
+  # cache buster, always use $repo for repo folder
+  rm -f /tmp/git_cautious_check_remote/${repo}-*
 }
 
 
@@ -95,8 +98,6 @@ branch() {
 }
 
 broken_upstream() {
-  # cache buster
-  rm /tmp/git_cautious_check_remote/gitutils-testrun-*
   git init
   # this tricks my code into thinking upstream is there, but it isn't
   git remote add origin /dev/null
@@ -154,6 +155,31 @@ bisect() {
   git bisect start
 }
 
+_commit() {
+  f=${1:-a}
+  echo "$f" > "$f"
+  git add "$f"
+  git commit -m "$f"
+}
+
+remote_update() {
+  remote=${d}/$repo
+  local=${d}/local
+  mkdir -p $remote
+  mkdir -p $local
+  cd $remote
+  git init
+  _commit a
+  # clone
+  cd $local
+  git clone $remote
+  # make origin go ahead
+  cd $remote
+  _commit b
+  # here prompt should say pull
+  cd ${local}/$repo
+}
+
 # test the test, these should all be caught failures
 run "intentional fail" init >/dev/null
 run "mixmasterblast" init >/dev/null
@@ -191,6 +217,7 @@ run "revert master"      revert
 run "bisect master"      bisect
 
 run "master"        broken_upstream
+run "pull master"   remote_update
 
 cleanup
 summary

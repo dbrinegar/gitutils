@@ -17,6 +17,7 @@ run() {
   pattern=$1
   shift
   cmd="$@"
+  printf "${cmd}: "
   cleanup
   mkdir -p $d
   result=$(
@@ -31,10 +32,10 @@ run() {
   if echo $result | egrep -qx "$pattern"
   then
     pass=$(( $pass + 1 ))
-    printf "$cmd: pass\n"
+    printf "pass\n"
   else
     fail=$(( $fail + 1 ))
-    printf "$cmd: FAIL\n  expected: $pattern\n  got: $result\n"
+    printf "$FAIL\n  expected: $pattern\n  got: $result\n"
   fi
   tests=$(( $tests + 1 ))
 }

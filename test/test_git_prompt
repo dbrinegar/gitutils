@@ -123,9 +123,12 @@ merge_conflict() {
 }
 
 
-# test the test
+# test the test, these should all be caught failures
 run "intentional fail" init >/dev/null
-if [ $fail -ne 1 -a $pass -ne 0 -a $tests -ne 1 ]
+run "mixmasterblast" init >/dev/null
+run " master" init >/dev/null
+run "master " init >/dev/null
+if [ $fail -ne 4 -a $pass -ne 0 -a $tests -ne 4 ]
 then
   echo tests are not behaving as expected
   exit 1

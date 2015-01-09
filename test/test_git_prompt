@@ -1,0 +1,123 @@
+#!/bin/sh
+
+d="/tmp/gitutils-testrun"
+
+pass=0
+fail=0
+tests=0
+
+cleanup() {
+  rm -rf $d
+}
+
+
+# run  regex_expectation  setup_functions..
+run() {
+  local cmd= result= pattern=
+  pattern=$1
+  shift
+  cmd="$@"
+  cleanup
+  mkdir -p $d
+  result=$(
+    cd $d
+    while [ -n "$1" ]
+    do
+      $1 >/dev/null 2>/dev/null
+      shift
+    done
+    git_prompt
+  )
+  if echo $result | egrep -q "$pattern"
+  then
+    pass=$(( $pass + 1 ))
+    printf "$cmd: pass\n"
+  else
+    fail=$(( $fail + 1 ))
+    printf "$cmd: FAIL\n  expected: $pattern\n  got: $result\n"
+  fi
+  tests=$(( $tests + 1 ))
+}
+
+summary() {
+  echo "passed $pass of $tests"
+  [ $fail -gt 0 ] && echo "FAILED $fail" && return 1
+  return 0
+}
+
+
+# git setup functions
+
+detached() {
+  local sha=
+
+  git init
+  touch a
+  git add a
+  git commit -m "a"
+  sha=$( git log --oneline | awk '{print $1}' )
+  git checkout $sha
+}
+
+init() {
+  git init
+}
+
+pre_first_add() {
+  git init
+  touch a
+}
+
+pre_first_commit() {
+  git init
+  touch a
+  git add a
+}
+
+pre_second_add() {
+  git init
+  touch a b
+  git add a
+  git commit -m "a"
+}
+
+pre_second_commit() {
+  git init
+  touch a b
+  git add a
+  git commit -m "a"
+  git add b
+}
+
+branch() {
+  git checkout -b zippy
+}
+
+# test the test
+run "intentional fail" init >/dev/null
+if [ $fail -ne 1 -a $pass -ne 0 -a $tests -ne 1 ]
+then
+  echo tests are not behaving as expected
+  exit 1
+fi
+fail=0
+pass=0
+tests=0
+
+# simple minded states that foiled code seen in the wild
+run "master"        init
+run "add master"    pre_first_add
+run "add master"    pre_second_add
+run "commit master" pre_first_commit
+run "commit master" pre_second_commit
+
+run "zippy"         init              branch
+run "add zippy"     pre_first_add     branch
+run "add zippy"     pre_second_add    branch
+run "commit zippy"  pre_first_commit  branch
+run "commit zippy"  pre_second_commit branch
+
+run "^detached head [a-h0-9]{8}[.]{3}$" detached
+
+cleanup
+summary

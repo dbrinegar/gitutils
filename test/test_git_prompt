@@ -54,7 +54,6 @@ summary() {
 
 detached() {
   local sha=
-
   git init
   touch a
   git add a
@@ -142,6 +141,7 @@ cherry_pick() {
 }
 
 revert() {
+  local sha=
   git init
   touch a
   git add a
@@ -163,33 +163,35 @@ _commit() {
 }
 
 remote_update() {
+  local remote= me=
   remote=${d}/$repo
-  local=${d}/local
+  me=${d}/me
   mkdir -p $remote
-  mkdir -p $local
+  mkdir -p $me
   cd $remote
   git init
   _commit a
   # clone
-  cd $local
+  cd $me
   git clone $remote
   # make origin go ahead
   cd $remote
   _commit b
   # here prompt should say pull
-  cd ${local}/$repo
+  cd ${me}/$repo
 }
 
 local_update() {
+  local remote= me=
   remote=${d}/$repo
-  local=${d}/local
+  me=${d}/me
   mkdir -p $remote
-  mkdir -p $local
+  mkdir -p $me
   cd $remote
   git init
   _commit a
   # clone
-  cd $local
+  cd $me
   git clone $remote
   # go ahead of origin
   cd $repo

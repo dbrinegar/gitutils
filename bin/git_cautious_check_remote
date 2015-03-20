@@ -106,14 +106,15 @@ cleanup_cache() {
 if check_no_flag || check_git_updated || check_period
 then
   [ $DEBUG ] && echo checking remote...
+  flag_no_updates  # to stop other invocations calling the remote
   (
-  cleanup_cache
   if git_has_remote_updates
   then
     flag_has_updates
   else
     flag_no_updates
   fi
+  cleanup_cache
   ) &
 fi
 

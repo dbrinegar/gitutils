@@ -93,10 +93,10 @@ flag_has_updates() {
   echo "has updates" > $flagFile
 }
 
-# TODO: clean up from time to time
 cleanup_cache() {
   # remove all the empty flag files older than 1 hour
   [ $DEBUG ] && echo cleaning up cache in /tmp/$me
+  mkdir -p /tmp/$me
   find /tmp/$me -size 0 -mtime +1h | xargs rm
 }
 
@@ -106,12 +106,15 @@ cleanup_cache() {
 if check_no_flag || check_git_updated || check_period
 then
   [ $DEBUG ] && echo checking remote...
+  (
+  cleanup_cache
   if git_has_remote_updates
   then
     flag_has_updates
   else
     flag_no_updates
   fi
+  ) &
 fi
 
 # return true if remote has updates we could fetch
